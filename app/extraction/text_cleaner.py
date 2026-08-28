@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 
 
-_MAX_CHARS = 12_000  # ~3000 tokens — keeps prompt within model context
+_MAX_CHARS = 8_000  # ~2000 tokens — keeps combined prompt comfortably within Groq TPM limits
 
 
 def clean_text(raw: str, max_chars: int = _MAX_CHARS) -> str:

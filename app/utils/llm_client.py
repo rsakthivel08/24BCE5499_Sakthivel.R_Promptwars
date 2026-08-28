@@ -131,6 +131,16 @@ def call_llm(
     model = model or settings.groq_model_agents
     client = _get_client()
 
+    # Safety guard: ensure user_message never exceeds 16,000 chars (~4,000 tokens)
+    _MAX_USER_LEN = 16_000
+    if len(user_message) > _MAX_USER_LEN:
+        logger.warning(
+            "llm_user_message_truncated",
+            original_len=len(user_message),
+            max_len=_MAX_USER_LEN,
+        )
+        user_message = user_message[:_MAX_USER_LEN] + "\n\n[... document content truncated to fit within model limits ...]"
+
     logger.debug(
         "llm_call",
         model=model,

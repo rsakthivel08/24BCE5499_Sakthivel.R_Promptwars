@@ -79,18 +79,23 @@ def build_profile_user_message(
     transcript_text: str,
     target_role: str = "",
 ) -> str:
-    role_section = f"\n═══════════════════════════════════════\nJOB DESCRIPTION / TARGET ROLE\n═══════════════════════════════════════\n{target_role}\n" if target_role else ""
+    # Cap sizes to guarantee prompt stays comfortably under Groq TPM limits
+    trimmed_jd = target_role[:3000].strip() if target_role else ""
+    trimmed_resume = resume_text[:6000].strip()
+    trimmed_transcript = transcript_text[:6000].strip()
+
+    role_section = f"\n═══════════════════════════════════════\nJOB DESCRIPTION / TARGET ROLE\n═══════════════════════════════════════\n{trimmed_jd}\n" if trimmed_jd else ""
     return f"""\
 Please extract the structured Candidate Profile from the documents below, noting relevant skills and experience aligned with the target role / job description.{role_section}
 ═══════════════════════════════════════
 RESUME
 ═══════════════════════════════════════
-{resume_text}
+{trimmed_resume}
 
 ═══════════════════════════════════════
-ACADEMIC TRANSCRIPT
+INTERVIEW / ACADEMIC TRANSCRIPT
 ═══════════════════════════════════════
-{transcript_text if transcript_text.strip() else "(No transcript provided)"}
+{trimmed_transcript if trimmed_transcript else "(No transcript provided)"}
 
 Output ONLY the JSON object.
 """

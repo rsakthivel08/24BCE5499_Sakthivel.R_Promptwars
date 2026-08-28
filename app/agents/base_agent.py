@@ -79,10 +79,10 @@ class BaseAgent(ABC):
         Returns:
             Validated AgentOpinionSchema
         """
-        logger.info("agent_evaluating", agent=self.name, target_role=target_role)
+        logger.info("agent_evaluating", agent=self.name, target_role=target_role[:100])
 
         user_message = _AGENT_USER_TEMPLATE.format(
-            target_role=target_role,
+            target_role=target_role[:2500].strip(),
             profile_json=json.dumps(candidate_profile, indent=2),
             agent_name=self.name,
         )
