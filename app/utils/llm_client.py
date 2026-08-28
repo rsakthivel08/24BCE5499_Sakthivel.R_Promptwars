@@ -124,15 +124,16 @@ def call_llm(
     user_message: str,
     model: str | None = None,
     temperature: float = 0.3,
-    max_tokens: int = 4096,
+    max_tokens: int = 2048,
 ) -> str:
     """Single LLM call — returns raw text response."""
     settings = get_settings()
     model = model or settings.groq_model_agents
     client = _get_client()
 
-    # Safety guard: ensure user_message never exceeds 16,000 chars (~4,000 tokens)
-    _MAX_USER_LEN = 16_000
+    # Safety guard: ensure user_message never exceeds 7,000 chars (~1,700 tokens)
+    # This prevents prompt + max_tokens from exceeding Groq's 6,000 TPM limit
+    _MAX_USER_LEN = 7_000
     if len(user_message) > _MAX_USER_LEN:
         logger.warning(
             "llm_user_message_truncated",
@@ -182,7 +183,7 @@ def call_llm_json(
     user_message: str,
     model: str | None = None,
     temperature: float = 0.2,
-    max_tokens: int = 4096,
+    max_tokens: int = 2048,
 ) -> dict[str, Any]:
     """LLM call that returns parsed JSON dict."""
     raw = call_llm(

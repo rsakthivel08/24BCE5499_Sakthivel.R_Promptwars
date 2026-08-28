@@ -47,7 +47,7 @@ def run_judge(
         system_prompt=JUDGE_SYSTEM_PROMPT,
         user_message=user_message,
         temperature=0.2,  # Low temperature for consistent, careful reasoning
-        max_tokens=4096,
+        max_tokens=2048,
     )
 
     # Set candidate and role if not populated by LLM

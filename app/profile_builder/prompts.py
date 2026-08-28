@@ -79,10 +79,10 @@ def build_profile_user_message(
     transcript_text: str,
     target_role: str = "",
 ) -> str:
-    # Cap sizes to guarantee prompt stays comfortably under Groq TPM limits
-    trimmed_jd = target_role[:3000].strip() if target_role else ""
-    trimmed_resume = resume_text[:6000].strip()
-    trimmed_transcript = transcript_text[:6000].strip()
+    # Cap sizes to guarantee prompt + max_tokens stays comfortably under Groq TPM limits
+    trimmed_jd = target_role[:1200].strip() if target_role else ""
+    trimmed_resume = resume_text[:2800].strip()
+    trimmed_transcript = transcript_text[:2800].strip()
 
     role_section = f"\n═══════════════════════════════════════\nJOB DESCRIPTION / TARGET ROLE\n═══════════════════════════════════════\n{trimmed_jd}\n" if trimmed_jd else ""
     return f"""\

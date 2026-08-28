@@ -114,7 +114,7 @@ def build_judge_user_message(
     slim_opinions = [_slim_opinion(o) for o in opinions]
     slim_debate = _slim_debate(debate_transcript)
 
-    trimmed_role = target_role[:2500].strip() if target_role else "Software Engineer"
+    trimmed_role = target_role[:1200].strip() if target_role else "Software Engineer"
     return f"""\
 Please produce the final hiring recommendation evaluating the candidate against the Job Description requirements.
 

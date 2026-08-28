@@ -82,7 +82,7 @@ class BaseAgent(ABC):
         logger.info("agent_evaluating", agent=self.name, target_role=target_role[:100])
 
         user_message = _AGENT_USER_TEMPLATE.format(
-            target_role=target_role[:2500].strip(),
+            target_role=target_role[:1200].strip(),
             profile_json=json.dumps(candidate_profile, indent=2),
             agent_name=self.name,
         )
@@ -91,7 +91,7 @@ class BaseAgent(ABC):
             system_prompt=self.system_prompt,
             user_message=user_message,
             temperature=0.4,
-            max_tokens=2500,
+            max_tokens=1500,
         )
 
         # Ensure agent name matches
