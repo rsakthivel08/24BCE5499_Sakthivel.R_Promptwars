@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Candidate Evaluation — Upload</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <div class="logo">Multi<span>Agent</span> Eval</div>
+      <a href="/docs" target="_blank" class="text-muted" style="font-size:0.85rem;">API Docs ↗</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="hero">
+        <h1>AI-Powered <span>Candidate Evaluation</span></h1>
+        <p>Upload a resume and transcript. Four independent AI personas evaluate the candidate,
+           debate each other, and a Judge agent delivers an evidence-based hiring recommendation.</p>
+      </div>
+
+      <!-- Upload Card -->
+      <div class="card" style="max-width: 680px; margin: 0 auto;">
+        <div class="card-title"><span class="icon">📁</span> Upload Documents</div>
+
+        <form id="uploadForm">
+          <div class="upload-grid">
+            <!-- Resume -->
+            <div class="upload-zone" id="resumeZone">
+              <input type="file" id="resumeFile" name="resume" accept=".pdf,.docx,.doc,.txt" required />
+              <div class="upload-icon">📄</div>
+              <div class="upload-label">Resume</div>
+              <div class="upload-hint">PDF, DOCX, or TXT</div>
+              <div class="upload-filename" id="resumeName" style="display:none;"></div>
+            </div>
+
+            <!-- Transcript -->
+            <div class="upload-zone" id="transcriptZone">
+              <input type="file" id="transcriptFile" name="transcript" accept=".pdf,.docx,.doc,.txt" />
+              <div class="upload-icon">🎓</div>
+              <div class="upload-label">Transcript <span class="text-muted">(optional)</span></div>
+              <div class="upload-hint">PDF, DOCX, or TXT</div>
+              <div class="upload-filename" id="transcriptName" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- Target Role -->
+          <div class="role-input">
+            <label for="targetRole">Target Role</label>
+            <input type="text" id="targetRole" name="target_role"
+                   placeholder="e.g. Backend Engineer, ML Engineer, Full Stack Developer"
+                   value="Software Engineer" />
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+            <span id="submitIcon">🚀</span>
+            <span id="submitText">Start Evaluation</span>
+          </button>
+        </form>
+
+        <!-- Progress -->
+        <div id="progressSection" style="display:none; margin-top:24px;">
+          <div id="statusMsg" class="text-muted" style="font-size:0.9rem; margin-bottom:8px;">
+            Uploading files...
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <div style="margin-top: 12px;">
+            <span class="status-badge badge-processing" id="phaseBadge">Processing</span>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="errorSection" style="display:none; margin-top:16px;">
+          <div class="status-badge badge-error" style="display:block; padding:12px; border-radius:8px;">
+            ⚠️ <span id="errorMsg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div style="max-width: 680px; margin: 32px auto 0;">
+        <div class="card-title" style="justify-content: center; margin-bottom:20px;">How It Works</div>
+        <div style="display: grid; grid-template-columns: repeat(2,1fr); gap:16px;">
+          <div class="card" style="margin:0; padding:18px;">
+            <div style="font-size:1.6rem; margin-bottom:8px;">👤</div>
+            <div style="font-weight:600; margin-bottom:4px;">Profile Builder</div>
+            <div class="text-muted" style="font-size:0.85rem;">Extracts structured candidate data from your documents</div>
+          </div>
+          <div class="card" style="margin:0; padding:18px;">
+            <div style="font-size:1.6rem; margin-bottom:8px;">🤖</div>
+            <div style="font-weight:600; margin-bottom:4px;">4 Independent Agents</div>
+            <div class="text-muted" style="font-size:0.85rem;">Technical, HR, Hiring Manager &amp; Skeptic evaluate separately</div>
+          </div>
+          <div class="card" style="margin:0; padding:18px;">
+            <div style="font-size:1.6rem; margin-bottom:8px;">⚔️</div>
+            <div style="font-weight:600; margin-bottom:4px;">Structured Debate</div>
+            <div class="text-muted" style="font-size:0.85rem;">Agents challenge and respond to each other's arguments</div>
+          </div>
+          <div class="card" style="margin:0; padding:18px;">
+            <div style="font-size:1.6rem; margin-bottom:8px;">⚖️</div>
+            <div style="font-weight:600; margin-bottom:4px;">Judge Agent</div>
+            <div class="text-muted" style="font-size:0.85rem;">Evidence-based final decision — never a score average</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/upload.js"></script>
+</body>
+</html>
