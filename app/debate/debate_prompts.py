@@ -8,6 +8,28 @@ from __future__ import annotations
 import json
 from typing import Any
 
+
+def _slim_opinion(opinion: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return a condensed version of an agent opinion for use in debate prompts.
+    Drops verbose fields (questions_for_interview, full lists) to save tokens.
+    Debate agents only need the key facts — not every detail.
+    """
+    def _trim_points(points: list, max_items: int = 3) -> list:
+        return [{"point": p.get("point", ""), "evidence": p.get("evidence", ""), "severity": p.get("severity", "")}
+                for p in points[:max_items]]
+
+    return {
+        "agent": opinion.get("agent", ""),
+        "overall_assessment": opinion.get("overall_assessment", ""),
+        "confidence": opinion.get("confidence", 0.0),
+        "score": opinion.get("score", 0),
+        "summary": opinion.get("summary", ""),
+        "strengths": _trim_points(opinion.get("strengths", []), 3),
+        "concerns": _trim_points(opinion.get("concerns", []), 3),
+        "recommendation": opinion.get("recommendation", ""),
+    }
+
 DEBATE_SYSTEM_PROMPTS: dict[str, str] = {
     "Technical Agent": """\
 You are the Technical Agent participating in a structured hiring debate.
@@ -142,8 +164,9 @@ Analyse the full debate above and produce a JSON summary:
 
 def build_round1_prompt(agent_name: str, opinions: list[dict[str, Any]]) -> tuple[str, str]:
     system = DEBATE_SYSTEM_PROMPTS[agent_name]
+    slim_opinions = [_slim_opinion(o) for o in opinions]
     user = _ROUND1_CHALLENGE_TEMPLATE.format(
-        opinions_json=json.dumps(opinions, indent=2),
+        opinions_json=json.dumps(slim_opinions, indent=2),
         agent_name=agent_name,
     )
     return system, user
@@ -155,8 +178,10 @@ def build_round2_prompt(
     round1_turns: list[dict[str, Any]],
 ) -> tuple[str, str]:
     system = DEBATE_SYSTEM_PROMPTS[agent_name]
+    slim_opinions = [_slim_opinion(o) for o in opinions]
+    # Keep round1 turns as-is (they are already concise debate messages)
     user = _ROUND2_RESPONSE_TEMPLATE.format(
-        opinions_json=json.dumps(opinions, indent=2),
+        opinions_json=json.dumps(slim_opinions, indent=2),
         round1_json=json.dumps(round1_turns, indent=2),
         agent_name=agent_name,
     )
@@ -171,9 +196,11 @@ def build_summary_prompt(
     system = """\
 You are a neutral debate moderator. Summarise the debate outcomes objectively.
 Output ONLY valid JSON."""
+    slim_opinions = [_slim_opinion(o) for o in opinions]
     user = _SUMMARY_TEMPLATE.format(
-        opinions_json=json.dumps(opinions, indent=2),
+        opinions_json=json.dumps(slim_opinions, indent=2),
         round1_json=json.dumps(round1_turns, indent=2),
         round2_json=json.dumps(round2_turns, indent=2),
     )
     return system, user
+

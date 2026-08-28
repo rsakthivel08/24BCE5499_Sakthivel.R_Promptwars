@@ -48,7 +48,16 @@ class AgentOpinionSchema(BaseModel):
         description="Suggested questions to probe weaknesses or verify claims",
     )
 
-    @field_validator("confidence")
+    @field_validator("confidence", mode="before")
     @classmethod
-    def round_confidence(cls, v: float) -> float:
-        return round(v, 2)
+    def normalize_confidence(cls, v: Any) -> float:
+        try:
+            val = float(v)
+            if val > 10.0:
+                val = val / 100.0
+            elif val > 1.0:
+                val = val / 10.0
+            return round(min(max(val, 0.0), 1.0), 2)
+        except (ValueError, TypeError):
+            return 0.5
+

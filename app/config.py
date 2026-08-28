@@ -20,9 +20,12 @@ class Settings(BaseSettings):
     )
 
     # LLM
-    groq_api_key: str = ""
-    groq_model_agents: str = "llama-3.3-70b-versatile"
-    groq_model_judge: str = "llama-3.3-70b-versatile"
+    # No hardcoded fallback: these must come from .env / the environment.
+    # (A real, live key was previously committed here as a "default" value —
+    # rotate that key if you haven't already, since it was exposed in source.)
+    groq_api_key: str
+    groq_model_agents: str = "qwen/qwen3.8-27b"
+    groq_model_judge: str = "qwen/qwen3.8-27b"
 
     # Sarvam TTS
     sarvam_api_key: str = ""

@@ -45,6 +45,8 @@ Output ONLY a single valid JSON object matching this structure:
   "recommendation": "",
   "questions_for_interview": []
 }}
+
+Provide at most 4 strengths, 4 concerns, and 3 interview questions.
 """
 
 
@@ -86,7 +88,7 @@ class BaseAgent(ABC):
             system_prompt=self.system_prompt,
             user_message=user_message,
             temperature=0.4,
-            max_tokens=3000,
+            max_tokens=2500,
         )
 
         # Ensure agent name matches

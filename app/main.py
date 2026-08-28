@@ -48,10 +48,15 @@ app = FastAPI(
 )
 
 # CORS (allow all for local development)
+# NOTE: allow_credentials=True cannot be combined with a literal "*" origin per the
+# CORS spec — browsers will reject credentialed responses. Since the frontend is
+# served same-origin (via the StaticFiles mount below), CORS headers aren't needed
+# for it at all. If you split the frontend out to its own origin later, set
+# allow_credentials=False here or list explicit origins instead of "*".
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -61,10 +66,15 @@ app.include_router(upload_router)
 app.include_router(eval_router)
 app.include_router(voice_router)
 
-# Serve static frontend
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 
 @app.get("/health", tags=["health"])
 async def health():
     return {"status": "ok", "service": "candidate-eval"}
+
+
+# Serve static frontend.
+# IMPORTANT: this mount must be registered LAST. Starlette matches routes in the
+# order they were added, and a Mount("/") matches any path as a prefix — so if it
+# were registered before /health (or any other route), it would swallow that
+# request before FastAPI ever reached the real handler.
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

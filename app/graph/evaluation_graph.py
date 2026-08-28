@@ -45,7 +45,8 @@ class EvaluationState(TypedDict, total=False):
     transcript_text: str
 
     # Outputs
-    candidate_profile: dict[str, Any]
+    candidate_profile: dict[str, Any]              # Full profile (for judge)
+    candidate_profile_for_agents: dict[str, Any]   # Slimmed profile (for agents)
     opinions: list[dict[str, Any]]
     debate_transcript: dict[str, Any]
     final_report: dict[str, Any]
@@ -66,7 +67,12 @@ def node_build_profile(state: EvaluationState) -> EvaluationState:
             transcript_text=state.get("transcript_text", ""),
             target_role=state.get("target_role", ""),
         )
-        return {**state, "candidate_profile": profile.model_dump(), "status": "profile_built"}
+        return {
+            **state,
+            "candidate_profile": profile.model_dump(),
+            "candidate_profile_for_agents": profile.model_dump_for_agent(),
+            "status": "profile_built",
+        }
     except Exception as exc:
         logger.error("node_build_profile_error", error=str(exc))
         return {**state, "error": str(exc), "status": "error"}
@@ -81,37 +87,32 @@ def _run_single_agent(agent_cls, profile: dict, role: str) -> dict[str, Any]:
 
 def node_run_agents(state: EvaluationState) -> EvaluationState:
     """
-    Run all 4 agents in parallel using asyncio.
+    Run all 4 agents independently.
     CRITICAL: Each agent receives only the candidate profile — no other agent's output.
+    Running sequentially ensures no concurrent rate-limit spikes on the LLM API.
     """
     logger.info("node_run_agents", evaluation_id=state.get("evaluation_id"))
     if state.get("error"):
         return state
 
-    profile = state["candidate_profile"]
+    # Use slimmed profile for agents to keep token usage manageable
+    profile = state.get("candidate_profile_for_agents") or state["candidate_profile"]
     role = state.get("target_role", "Software Engineer")
 
     agent_classes = [TechnicalAgent, HRAgent, HiringManagerAgent, SkepticAgent]
 
-    async def _run_all_parallel():
-        loop = asyncio.get_event_loop()
-        tasks = [
-            loop.run_in_executor(None, _run_single_agent, cls, profile, role)
-            for cls in agent_classes
-        ]
-        return await asyncio.gather(*tasks)
-
     try:
-        # Run parallel agent evaluations
-        loop = asyncio.new_event_loop()
-        results = loop.run_until_complete(_run_all_parallel())
-        loop.close()
-        opinions = list(results)
+        opinions: list[dict[str, Any]] = []
+        for cls in agent_classes:
+            opinion_dict = _run_single_agent(cls, profile, role)
+            opinions.append(opinion_dict)
+
         logger.info("node_run_agents_complete", count=len(opinions))
         return {**state, "opinions": opinions, "status": "agents_complete"}
     except Exception as exc:
         logger.error("node_run_agents_error", error=str(exc))
         return {**state, "error": str(exc), "status": "error"}
+
 
 
 def node_run_debate(state: EvaluationState) -> EvaluationState:

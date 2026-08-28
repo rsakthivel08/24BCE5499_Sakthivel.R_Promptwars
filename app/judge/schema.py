@@ -64,7 +64,16 @@ class FinalReportSchema(BaseModel):
         description="Top 5 questions to verify remaining uncertainties",
     )
 
-    @field_validator("confidence_score")
+    @field_validator("confidence_score", mode="before")
     @classmethod
-    def round_score(cls, v: float) -> float:
-        return round(v, 2)
+    def normalize_score(cls, v: Any) -> float:
+        try:
+            val = float(v)
+            if val > 10.0:
+                val = val / 100.0
+            elif val > 1.0:
+                val = val / 10.0
+            return round(min(max(val, 0.0), 1.0), 2)
+        except (ValueError, TypeError):
+            return 0.5
+

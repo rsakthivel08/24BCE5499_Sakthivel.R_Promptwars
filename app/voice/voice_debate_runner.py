@@ -6,7 +6,6 @@ Ensures audio and text remain consistent.
 """
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from app.voice.tts_engine import generate_speech
@@ -57,8 +56,12 @@ def generate_voice_debate(
 
             audio_url: str | None = None
             if audio_path is not None:
-                # Build a relative URL the frontend can fetch
-                audio_url = f"/audio/{audio_path.name}"
+                # Build a relative URL the frontend can fetch.
+                # This MUST match the actual route in voice_routes.py, which is
+                # registered under prefix="/api" -> GET /api/audio/{filename}.
+                # (Previously this omitted the /api prefix, so the URL fell through
+                # to the StaticFiles("/") mount and 404'd on every generated clip.)
+                audio_url = f"/api/audio/{audio_path.name}"
 
             enriched_turn = {
                 **turn,

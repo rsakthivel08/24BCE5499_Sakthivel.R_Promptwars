@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Runtime data — contains uploaded resumes/transcripts and candidate PII
+data/uploads/
+data/audio/
+data/*.db
+data/*.sqlite3

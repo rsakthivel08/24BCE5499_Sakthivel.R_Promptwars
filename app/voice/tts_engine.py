@@ -18,49 +18,39 @@ from app.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 # Voice configuration per agent persona
-# Sarvam Bulbul V3 speaker IDs
+# Sarvam Bulbul V3 speaker IDs (aditya, priya, ashutosh, ratan)
 AGENT_VOICE_CONFIG: dict[str, dict] = {
     "Technical Agent": {
-        "speaker": "anushka",   # Clear, analytical voice
-        "pitch": 0,
+        "speaker": "aditya",    # Clear, analytical voice
         "pace": 1.0,
-        "loudness": 1.0,
         "speech_sample_rate": 22050,
-        "model": "bulbul:v1",
+        "model": "bulbul:v3",
     },
     "HR Agent": {
-        "speaker": "diya",      # Warm, empathetic voice
-        "pitch": 0,
+        "speaker": "priya",     # Warm, empathetic voice
         "pace": 0.95,
-        "loudness": 1.0,
         "speech_sample_rate": 22050,
-        "model": "bulbul:v1",
+        "model": "bulbul:v3",
     },
     "Hiring Manager Agent": {
-        "speaker": "arvind",    # Authoritative, decisive voice
-        "pitch": -2,
+        "speaker": "ashutosh",  # Authoritative, decisive voice
         "pace": 1.05,
-        "loudness": 1.1,
         "speech_sample_rate": 22050,
-        "model": "bulbul:v1",
+        "model": "bulbul:v3",
     },
     "Skeptic Agent": {
-        "speaker": "amol",      # Measured, skeptical voice
-        "pitch": -1,
+        "speaker": "ratan",     # Measured, skeptical voice
         "pace": 0.90,
-        "loudness": 1.0,
         "speech_sample_rate": 22050,
-        "model": "bulbul:v1",
+        "model": "bulbul:v3",
     },
 }
 
 _DEFAULT_VOICE = {
-    "speaker": "anushka",
-    "pitch": 0,
+    "speaker": "aditya",
     "pace": 1.0,
-    "loudness": 1.0,
     "speech_sample_rate": 22050,
-    "model": "bulbul:v1",
+    "model": "bulbul:v3",
 }
 
 
@@ -101,13 +91,12 @@ def generate_speech(text: str, agent_name: str) -> Path | None:
         "inputs": [safe_text],
         "target_language_code": "en-IN",
         "speaker": voice_cfg["speaker"],
-        "pitch": voice_cfg["pitch"],
         "pace": voice_cfg["pace"],
-        "loudness": voice_cfg["loudness"],
         "speech_sample_rate": voice_cfg["speech_sample_rate"],
         "enable_preprocessing": True,
         "model": voice_cfg["model"],
     }
+
 
     try:
         response = httpx.post(
@@ -134,7 +123,7 @@ def generate_speech(text: str, agent_name: str) -> Path | None:
         return cache_path
 
     except httpx.HTTPStatusError as exc:
-        logger.error("tts_http_error", status=exc.response.status_code, agent=agent_name)
+        logger.error("tts_http_error", status=exc.response.status_code, agent=agent_name, response=exc.response.text)
         return None
     except Exception as exc:
         logger.error("tts_error", error=str(exc), agent=agent_name)

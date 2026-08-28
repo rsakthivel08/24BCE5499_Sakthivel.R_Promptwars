@@ -14,22 +14,40 @@ logger = get_logger(__name__)
 
 
 def extract_text_from_pdf(file_path: Path) -> str:
-    """Extract all text from a PDF using PyMuPDF."""
+    """Extract all text from a PDF using pdfplumber."""
     try:
-        import fitz  # PyMuPDF
+        import pdfplumber
 
-        doc = fitz.open(str(file_path))
         pages_text: list[str] = []
-        for page_num, page in enumerate(doc, start=1):
-            text = page.get_text("text")
-            if text.strip():
-                pages_text.append(f"--- Page {page_num} ---\n{text}")
-        doc.close()
+
+        with pdfplumber.open(str(file_path)) as pdf:
+            for page_num, page in enumerate(pdf.pages, start=1):
+                text = page.extract_text()
+
+                if text and text.strip():
+                    pages_text.append(
+                        f"--- Page {page_num} ---\n{text.strip()}"
+                    )
+
         result = "\n".join(pages_text)
-        logger.info("pdf_extracted", path=str(file_path), pages=len(pages_text))
+
+        if not result.strip():
+            raise ValueError("No extractable text found in the PDF.")
+
+        logger.info(
+            "pdf_extracted",
+            path=str(file_path),
+            pages=len(pages_text)
+        )
+
         return result
+
     except Exception as exc:
-        logger.error("pdf_extraction_failed", path=str(file_path), error=str(exc))
+        logger.error(
+            "pdf_extraction_failed",
+            path=str(file_path),
+            error=str(exc)
+        )
         raise
 
 

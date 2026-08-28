@@ -80,5 +80,23 @@ class CandidateProfile(BaseModel):
     )
 
     def model_dump_for_agent(self) -> dict[str, Any]:
-        """Serialise to a dict suitable for passing to LLM prompts."""
-        return self.model_dump(exclude={"raw_resume_snippet", "raw_transcript_snippet"})
+        """
+        Serialise to a dict suitable for passing to LLM prompts.
+        Trims verbose list fields to keep token usage manageable.
+        """
+        data = self.model_dump(exclude={"raw_resume_snippet", "raw_transcript_snippet"})
+
+        # Cap responsibilities per experience role
+        for exp in data.get("experience", []):
+            exp["responsibilities"] = exp.get("responsibilities", [])[:3]
+            exp["achievements"] = exp.get("achievements", [])[:3]
+
+        # Cap projects, claims, extracurriculars
+        data["projects"] = data.get("projects", [])[:4]
+        data["candidate_claims"] = data.get("candidate_claims", [])[:8]
+        data["extracurriculars"] = data.get("extracurriculars", [])[:3]
+        data["certifications"] = data.get("certifications", [])[:5]
+        data["achievements"] = data.get("achievements", [])[:5]
+
+        return data
+

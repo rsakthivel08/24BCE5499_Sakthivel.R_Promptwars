@@ -2,6 +2,7 @@
 app/judge/judge_prompts.py
 ───────────────────────────
 System prompt and user message builder for the Judge Agent.
+Payloads are slimmed to keep within model token limits.
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ CRITICAL RULES:
    - If a disagreement was resolved in the debate, explain how.
    - If a disagreement is UNRESOLVED, it must appear in unresolved_disagreements.
 6. Your reasoning must be transparent — the hiring committee must understand exactly why you \
-   reached this recommendation.
+reached this recommendation.
 7. Do NOT be biased toward hiring or rejecting — be honest about the evidence.
 
 Scoring Guidance (NOT averaging):
@@ -37,31 +38,101 @@ Output ONLY valid JSON matching the required schema. No markdown, no prose outsi
 """
 
 
+def _slim_opinion(opinion: dict[str, Any]) -> dict[str, Any]:
+    """Keep only decision-critical fields for the judge."""
+    def _trim(points: list, n: int = 3) -> list:
+        return [{"point": p.get("point", ""), "evidence": p.get("evidence", ""), "severity": p.get("severity", "")}
+                for p in points[:n]]
+    return {
+        "agent": opinion.get("agent", ""),
+        "overall_assessment": opinion.get("overall_assessment", ""),
+        "confidence": opinion.get("confidence", 0.0),
+        "score": opinion.get("score", 0),
+        "summary": opinion.get("summary", ""),
+        "strengths": _trim(opinion.get("strengths", []), 3),
+        "concerns": _trim(opinion.get("concerns", []), 3),
+        "recommendation": opinion.get("recommendation", ""),
+    }
+
+
+def _slim_debate(debate: dict[str, Any]) -> dict[str, Any]:
+    """Keep only the debate outcomes — turns are condensed to essentials."""
+    def _slim_turn(t: dict) -> dict:
+        return {
+            "speaker": t.get("speaker", ""),
+            "addressing": t.get("addressing", ""),
+            "stance": t.get("stance", ""),
+            "point_being_discussed": t.get("point_being_discussed", ""),
+            "message": t.get("message", "")[:300],  # cap long messages
+            "opinion_change": t.get("opinion_change", "none"),
+        }
+
+    slim_rounds = []
+    for round_ in debate.get("rounds", []):
+        slim_rounds.append({
+            "round_number": round_.get("round_number"),
+            "turns": [_slim_turn(t) for t in round_.get("turns", [])],
+        })
+
+    return {
+        "rounds": slim_rounds,
+        "updated_opinions": debate.get("updated_opinions", {}),
+        "key_agreements": debate.get("key_agreements", [])[:5],
+        "key_disagreements": debate.get("key_disagreements", [])[:5],
+        "unresolved_issues": debate.get("unresolved_issues", [])[:5],
+    }
+
+
+def _slim_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    """Keep only the fields the judge needs — drop raw text snippets."""
+    return {
+        "candidate_name": profile.get("candidate_name", ""),
+        "education": profile.get("education", {}),
+        "skills": profile.get("skills", [])[:15],
+        "programming_languages": profile.get("programming_languages", [])[:10],
+        "frameworks": profile.get("frameworks", [])[:10],
+        "experience": [
+            {
+                "role": e.get("role", ""),
+                "company": e.get("company", ""),
+                "duration": e.get("duration", ""),
+                "achievements": e.get("achievements", [])[:3],
+            }
+            for e in profile.get("experience", [])[:3]
+        ],
+        "candidate_claims": profile.get("candidate_claims", [])[:6],
+    }
+
+
 def build_judge_user_message(
     candidate_profile: dict[str, Any],
     opinions: list[dict[str, Any]],
     debate_transcript: dict[str, Any],
     target_role: str = "",
 ) -> str:
+    slim_profile = _slim_profile(candidate_profile)
+    slim_opinions = [_slim_opinion(o) for o in opinions]
+    slim_debate = _slim_debate(debate_transcript)
+
     return f"""\
 Please produce the final hiring recommendation.
 
 Target Role: {target_role or "Not specified"}
 
 ════════════════════════════════
-CANDIDATE PROFILE
+CANDIDATE PROFILE (SUMMARY)
 ════════════════════════════════
-{json.dumps(candidate_profile, indent=2)}
+{json.dumps(slim_profile, indent=2)}
 
 ════════════════════════════════
 INDEPENDENT AGENT EVALUATIONS
 ════════════════════════════════
-{json.dumps(opinions, indent=2)}
+{json.dumps(slim_opinions, indent=2)}
 
 ════════════════════════════════
-DEBATE TRANSCRIPT
+DEBATE TRANSCRIPT (SUMMARY)
 ════════════════════════════════
-{json.dumps(debate_transcript, indent=2)}
+{json.dumps(slim_debate, indent=2)}
 
 Output the final report as JSON:
 {{
@@ -93,3 +164,4 @@ Output the final report as JSON:
   "suggested_interview_questions": []
 }}
 """
+

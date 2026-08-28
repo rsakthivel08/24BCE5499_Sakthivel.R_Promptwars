@@ -6,6 +6,8 @@ Also serves individual audio files.
 """
 from __future__ import annotations
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,6 +21,12 @@ from app.utils.logging_config import get_logger
 
 router = APIRouter(prefix="/api", tags=["voice"])
 logger = get_logger(__name__)
+# generate_speech() makes a blocking (synchronous) HTTP call per debate turn.
+# Running it directly inside an async route would block the whole event loop —
+# every other request (uploads, status polling, etc. for ALL users) would stall
+# for the entire duration of TTS generation. Offload it to a thread pool instead,
+# the same way the main evaluation pipeline already does.
+_executor = ThreadPoolExecutor(max_workers=2)
 
 
 @router.post("/voice/{evaluation_id}", summary="Generate voice debate audio")
@@ -50,7 +58,10 @@ async def generate_voice(evaluation_id: str, db: AsyncSession = Depends(get_db))
         ]
     }
 
-    enriched = generate_voice_debate(debate_transcript, evaluation_id)
+    loop = asyncio.get_event_loop()
+    enriched = await loop.run_in_executor(
+        _executor, generate_voice_debate, debate_transcript, evaluation_id
+    )
     return {
         "evaluation_id": evaluation_id,
         "turns": enriched,
