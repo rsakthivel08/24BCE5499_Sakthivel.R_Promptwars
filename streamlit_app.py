@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for polished interface
+# Custom CSS for modern clean styling
 st.markdown(
     """
     <style>
@@ -35,42 +35,35 @@ st.markdown(
         margin-bottom: 0.2rem;
     }
     .sub-header {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         color: #64748B;
         margin-bottom: 1.5rem;
-    }
-    .agent-card {
-        border-radius: 10px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        border: 1px solid #E2E8F0;
-        background-color: #F8FAFC;
     }
     .badge-hire {
         background-color: #DCFCE7;
         color: #166534;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         font-weight: 600;
     }
     .badge-reject {
         background-color: #FEE2E2;
         color: #991B1B;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         font-weight: 600;
     }
     .badge-hold {
         background-color: #FEF3C7;
         color: #92400E;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         font-weight: 600;
     }
     .badge-interview {
         background-color: #E0F2FE;
         color: #075985;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         font-weight: 600;
     }
@@ -119,10 +112,10 @@ with st.sidebar:
     st.subheader("🤖 Active AI Personas")
     st.markdown(
         """
-        - **🛠️ Technical Agent**: Deep technical skills & architecture.
-        - **🤝 HR / Culture Agent**: Communication, teamwork & honesty.
-        - **💼 Hiring Manager**: Role fit & business value.
-        - **🔍 Skeptic Agent**: Contradictions & red flags.
+        - **🛠️ Technical Agent**: Architecture, coding depth & technical fit against JD.
+        - **🤝 HR / Culture Agent**: Communication, teamwork & soft skills.
+        - **💼 Hiring Manager**: Business impact & role qualification match.
+        - **🔍 Skeptic Agent**: Contradictions & unverified resume claims.
         - **⚖️ Judge Agent**: Evidence synthesis (No score averaging).
         """
     )
@@ -149,7 +142,7 @@ def process_uploaded_file(uploaded_file) -> str:
 # --- Main App Header ---
 st.markdown('<div class="main-header">🤖 Multi-Agent AI Interview Panel Simulator</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="sub-header">Autonomous multi-agent evaluation, evidence-grounded debate, and synthesis for hiring decisions.</div>',
+    '<div class="sub-header">Autonomous 4-agent evaluation, evidence-grounded multi-round debate, and synthesis against company job requirements.</div>',
     unsafe_allow_html=True,
 )
 
@@ -171,9 +164,28 @@ if "voice_debate" not in st.session_state:
 # WORKFLOW 1: SINGLE CANDIDATE EVALUATION
 # =========================================================================
 if app_mode == "Single Candidate Evaluation":
-    st.subheader("1. Upload Candidate Documents")
+    st.subheader("1. Company Job Description / Role Requirements")
     
-    col1, col2, col3 = st.columns([1.5, 1.5, 1])
+    jd_tab1, jd_tab2 = st.tabs(["📁 Upload Job Description PDF / DOCX", "✍️ Enter / Customize Job Description Text"])
+    
+    with jd_tab1:
+        jd_file = st.file_uploader(
+            "Upload Company Job Description Document (PDF / DOCX / TXT)",
+            type=["pdf", "docx", "doc", "txt"],
+            key="single_jd_file",
+            help="Upload the actual PDF job description from the company for full requirements matching.",
+        )
+    
+    with jd_tab2:
+        manual_jd_text = st.text_area(
+            "Or Type / Paste Job Description & Requirements:",
+            value="Job Title: Senior Software Engineer\n\nKey Responsibilities:\n- Design and implement scalable microservices using Python and FastAPI.\n- Build high-throughput data processing and AI/LLM pipelines.\n- Lead architectural reviews and mentor junior engineers.\n\nRequired Qualifications:\n- 3+ years of production experience in Python, AsyncIO, and relational databases (PostgreSQL).\n- Hands-on experience with Docker, Redis, and cloud services (AWS/GCP).\n- Strong understanding of distributed systems, error resilience, and system design.",
+            height=130,
+            key="single_jd_text",
+        )
+
+    st.subheader("2. Upload Candidate Documents")
+    col1, col2 = st.columns(2)
     
     with col1:
         resume_file = st.file_uploader(
@@ -187,12 +199,6 @@ if app_mode == "Single Candidate Evaluation":
             type=["pdf", "docx", "doc", "txt"],
             key="single_transcript",
         )
-    with col3:
-        target_role = st.text_input(
-            "🎯 Target Job Role",
-            value="Software Engineer",
-            key="single_role",
-        )
 
     evaluate_btn = st.button("🚀 Run Multi-Agent Evaluation", type="primary", use_container_width=True)
 
@@ -205,28 +211,35 @@ if app_mode == "Single Candidate Evaluation":
             with st.spinner("Extracting text from documents..."):
                 resume_text = process_uploaded_file(resume_file)
                 transcript_text = process_uploaded_file(transcript_file) if transcript_file else ""
+                
+                # Extract JD file if uploaded, else fallback to manual text
+                if jd_file is not None:
+                    jd_extracted = process_uploaded_file(jd_file)
+                    final_target_role = f"Job Description:\n{jd_extracted}"
+                else:
+                    final_target_role = manual_jd_text.strip() if manual_jd_text.strip() else "Software Engineer"
 
             if not resume_text.strip():
                 st.error("Could not extract text from the uploaded resume.")
             else:
-                progress_bar = st.progress(10, text="1/4: Building Candidate Profile...")
+                progress_bar = st.progress(10, text="1/4: Building Candidate Profile aligned with Job Description...")
                 eval_id = f"eval_{int(time.time())}"
                 
                 try:
                     time.sleep(0.5)
-                    progress_bar.progress(30, text="2/4: Running 4 Independent Agent Evaluations...")
+                    progress_bar.progress(30, text="2/4: Running 4 Independent Agent Evaluations against Job Description...")
                     
                     results = run_evaluation_pipeline(
                         evaluation_id=eval_id,
                         resume_text=resume_text,
                         transcript_text=transcript_text,
-                        target_role=target_role,
+                        target_role=final_target_role,
                     )
                     
                     progress_bar.progress(70, text="3/4: Conducting Multi-Round Agent Debate...")
                     time.sleep(0.5)
                     
-                    progress_bar.progress(90, text="4/4: Synthesizing Final Decision...")
+                    progress_bar.progress(90, text="4/4: Synthesizing Final Decision Report...")
                     time.sleep(0.5)
                     
                     if results.get("error"):
@@ -260,15 +273,16 @@ if app_mode == "Single Candidate Evaluation":
         rec = report.get("final_recommendation", "N/A")
         badge_style = "badge-hire" if "Hire" in rec else "badge-reject" if "Reject" in rec else "badge-hold" if "Hold" in rec else "badge-interview"
         
-        mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+        mcol1, mcol2, mcol3 = st.columns([1.5, 1.5, 1.5])
         with mcol1:
             st.metric("Candidate Name", profile.get("candidate_name", "Unknown"))
         with mcol2:
             st.markdown(f"**Final Recommendation**<br><span class='{badge_style}'>{rec}</span>", unsafe_allow_html=True)
         with mcol3:
             st.metric("Confidence Score", f"{report.get('confidence_score', 0.0) * 100:.0f}% ({report.get('confidence_level', 'Medium')})")
-        with mcol4:
-            st.metric("Target Role", report.get("target_role", target_role))
+
+        with st.expander("🏢 View Job Description / Requirements Evaluated Against", expanded=False):
+            st.text(res.get("target_role", "Software Engineer"))
 
         # Result Tabs
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -324,7 +338,7 @@ if app_mode == "Single Candidate Evaluation":
         # --- TAB 2: Agent Opinions ---
         with tab2:
             st.markdown("### Independent Persona Evaluations")
-            st.caption("Each agent evaluated the candidate in complete isolation without seeing other agents' assessments.")
+            st.caption("Each agent evaluated the candidate specifically against the Job Description in complete isolation.")
             
             icons = {
                 "Technical Agent": "🛠️",
@@ -459,7 +473,6 @@ if app_mode == "Single Candidate Evaluation":
                     st.write(f"💬 \"{msg}\"")
                     
                     if audio_url:
-                        # Extract local filename
                         audio_filename = audio_url.split("/")[-1]
                         audio_path = Path("data/audio") / audio_filename
                         if audio_path.exists():
@@ -473,23 +486,39 @@ if app_mode == "Single Candidate Evaluation":
 # WORKFLOW 2: DUAL CANDIDATE COMPARISON (BONUS)
 # =========================================================================
 else:
-    st.subheader("⚖️ Compare Two Candidates (Bonus Feature)")
-    st.caption("Evaluate and rank Candidate A vs Candidate B side-by-side using the multi-agent committee.")
+    st.subheader("⚖️ Compare Two Candidates Against Job Description")
+    st.caption("Evaluate and rank Candidate A vs Candidate B side-by-side against the same company job description.")
     
+    st.markdown("#### 1. Company Job Description (Shared for Both Candidates)")
+    comp_jd_tab1, comp_jd_tab2 = st.tabs(["📁 Upload Job Description PDF / DOCX", "✍️ Enter / Customize Job Description Text"])
+    
+    with comp_jd_tab1:
+        comp_jd_file = st.file_uploader(
+            "Upload Job Description Document (PDF / DOCX / TXT)",
+            type=["pdf", "docx", "doc", "txt"],
+            key="comp_jd_file",
+        )
+    with comp_jd_tab2:
+        comp_jd_manual = st.text_area(
+            "Or Enter Job Description Text:",
+            value="Role: Senior Software Engineer\nRequirements: 3+ years Python/FastAPI, microservices, cloud deployments, strong system design and leadership.",
+            height=100,
+            key="comp_jd_manual",
+        )
+
+    st.markdown("#### 2. Candidate Documents")
     colA, colB = st.columns(2)
     
     with colA:
-        st.markdown("### Candidate A")
-        res_A = st.file_uploader("Candidate A Resume (PDF)", type=["pdf", "docx", "txt"], key="comp_res_a")
-        trn_A = st.file_uploader("Candidate A Transcript (PDF)", type=["pdf", "docx", "txt"], key="comp_trn_a")
+        st.markdown("### 👤 Candidate A")
+        res_A = st.file_uploader("Candidate A Resume (PDF/DOCX)", type=["pdf", "docx", "txt"], key="comp_res_a")
+        trn_A = st.file_uploader("Candidate A Transcript (PDF/DOCX)", type=["pdf", "docx", "txt"], key="comp_trn_a")
         
     with colB:
-        st.markdown("### Candidate B")
-        res_B = st.file_uploader("Candidate B Resume (PDF)", type=["pdf", "docx", "txt"], key="comp_res_b")
-        trn_B = st.file_uploader("Candidate B Transcript (PDF)", type=["pdf", "docx", "txt"], key="comp_trn_b")
+        st.markdown("### 👤 Candidate B")
+        res_B = st.file_uploader("Candidate B Resume (PDF/DOCX)", type=["pdf", "docx", "txt"], key="comp_res_b")
+        trn_B = st.file_uploader("Candidate B Transcript (PDF/DOCX)", type=["pdf", "docx", "txt"], key="comp_trn_b")
         
-    target_role_comp = st.text_input("🎯 Target Job Role for Both", value="Senior Software Engineer", key="comp_role")
-    
     comp_btn = st.button("🚀 Evaluate & Compare Both Candidates", type="primary", use_container_width=True)
     
     if comp_btn:
@@ -498,15 +527,22 @@ else:
         elif not res_A or not res_B:
             st.error("⚠️ Please upload resumes for both Candidate A and Candidate B.")
         else:
-            with st.spinner("Evaluating Candidate A through 4-Agent Pipeline..."):
+            with st.spinner("Extracting Job Description and Candidate documents..."):
+                if comp_jd_file is not None:
+                    shared_jd = process_uploaded_file(comp_jd_file)
+                else:
+                    shared_jd = comp_jd_manual.strip() if comp_jd_manual.strip() else "Software Engineer"
+                
                 text_res_A = process_uploaded_file(res_A)
                 text_trn_A = process_uploaded_file(trn_A) if trn_A else ""
-                res_A_eval = run_evaluation_pipeline("eval_A", text_res_A, text_trn_A, target_role_comp)
-                
-            with st.spinner("Evaluating Candidate B through 4-Agent Pipeline..."):
                 text_res_B = process_uploaded_file(res_B)
                 text_trn_B = process_uploaded_file(trn_B) if trn_B else ""
-                res_B_eval = run_evaluation_pipeline("eval_B", text_res_B, text_trn_B, target_role_comp)
+
+            with st.spinner("Evaluating Candidate A through 4-Agent Pipeline..."):
+                res_A_eval = run_evaluation_pipeline("eval_A", text_res_A, text_trn_A, shared_jd)
+                
+            with st.spinner("Evaluating Candidate B through 4-Agent Pipeline..."):
+                res_B_eval = run_evaluation_pipeline("eval_B", text_res_B, text_trn_B, shared_jd)
                 
             st.session_state.comparison_results = {
                 "A": res_A_eval,
@@ -522,17 +558,33 @@ else:
         profB = comp["B"].get("candidate_profile", {})
         
         st.markdown("---")
-        st.subheader("🏆 Candidate Comparison & Ranking")
+        st.subheader("🏆 Side-by-Side Comparison & Recommendation")
         
         cmp1, cmp2 = st.columns(2)
         with cmp1:
             st.markdown(f"### Candidate A: {profA.get('candidate_name', 'Candidate A')}")
             st.metric("Recommendation", repA.get("final_recommendation", "N/A"))
             st.metric("Confidence Score", f"{repA.get('confidence_score', 0.0)*100:.0f}%")
-            st.info(f"**Reasoning:** {repA.get('reasoning', '')}")
+            st.info(f"**Judge Reasoning:**\n\n{repA.get('reasoning', '')}")
+            
+            st.markdown("**Key Strengths:**")
+            for ks in repA.get("key_strengths", []):
+                st.markdown(f"- {ks.get('point')}")
+                
+            st.markdown("**Key Concerns:**")
+            for kc in repA.get("key_concerns", []):
+                st.markdown(f"- {kc.get('point')} ({kc.get('severity', 'medium')})")
             
         with cmp2:
             st.markdown(f"### Candidate B: {profB.get('candidate_name', 'Candidate B')}")
             st.metric("Recommendation", repB.get("final_recommendation", "N/A"))
             st.metric("Confidence Score", f"{repB.get('confidence_score', 0.0)*100:.0f}%")
-            st.info(f"**Reasoning:** {repB.get('reasoning', '')}")
+            st.info(f"**Judge Reasoning:**\n\n{repB.get('reasoning', '')}")
+            
+            st.markdown("**Key Strengths:**")
+            for ks in repB.get("key_strengths", []):
+                st.markdown(f"- {ks.get('point')}")
+                
+            st.markdown("**Key Concerns:**")
+            for kc in repB.get("key_concerns", []):
+                st.markdown(f"- {kc.get('point')} ({kc.get('severity', 'medium')})")

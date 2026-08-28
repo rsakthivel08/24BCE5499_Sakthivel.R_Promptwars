@@ -51,15 +51,16 @@ def _save_upload(file: UploadFile, dest_dir: Path) -> Path:
     return dest
 
 
-@router.post("/upload", summary="Upload resume and transcript to start evaluation")
+@router.post("/upload", summary="Upload resume, transcript, and optional job description to start evaluation")
 async def upload_files(
     resume: UploadFile = File(..., description="Resume file (PDF, DOCX, or TXT)"),
-    transcript: UploadFile = File(None, description="Academic transcript (optional)"),
+    transcript: UploadFile = File(None, description="Interview or academic transcript (optional)"),
+    job_description: UploadFile = File(None, description="Job Description document (PDF, DOCX, or TXT, optional)"),
     target_role: str = Form(default="Software Engineer"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Accept resume + optional transcript uploads.
+    Accept resume + optional transcript + optional job description document uploads.
     Extracts text, saves files, and creates an Evaluation record.
     Returns evaluation_id for polling.
     """
@@ -69,13 +70,16 @@ async def upload_files(
     _validate_file(resume, "resume")
     if transcript and transcript.filename:
         _validate_file(transcript, "transcript")
+    if job_description and job_description.filename:
+        _validate_file(job_description, "job_description")
 
     # Save files
     upload_dir = settings.upload_dir
     resume_path = _save_upload(resume, upload_dir)
     transcript_path = _save_upload(transcript, upload_dir) if (transcript and transcript.filename) else None
+    jd_path = _save_upload(job_description, upload_dir) if (job_description and job_description.filename) else None
 
-    logger.info("files_saved", resume=str(resume_path), transcript=str(transcript_path))
+    logger.info("files_saved", resume=str(resume_path), transcript=str(transcript_path), jd=str(jd_path))
 
     # Extract text
     try:
@@ -91,10 +95,19 @@ async def upload_files(
             logger.warning("transcript_extraction_failed", error=str(exc))
             transcript_text = ""
 
+    final_role_or_jd = target_role
+    if jd_path:
+        try:
+            extracted_jd = clean_text(extract_text(jd_path))
+            if extracted_jd.strip():
+                final_role_or_jd = f"{target_role}\n\n[JOB DESCRIPTION DOCUMENT]:\n{extracted_jd}"
+        except Exception as exc:
+            logger.warning("job_description_extraction_failed", error=str(exc))
+
     # Create DB record
     ev = await create_evaluation(
         db,
-        target_role=target_role,
+        target_role=final_role_or_jd,
         resume_filename=resume.filename or "",
         transcript_filename=(transcript.filename if transcript else "") or "",
     )

@@ -18,14 +18,17 @@ from app.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 _AGENT_USER_TEMPLATE = """\
-You are evaluating the following candidate for the role: {target_role}
+═══════════════════════════════════════
+JOB DESCRIPTION / TARGET ROLE REQUIREMENTS
+═══════════════════════════════════════
+{target_role}
 
 ═══════════════════════════════════════
 CANDIDATE PROFILE (JSON)
 ═══════════════════════════════════════
 {profile_json}
 
-Perform your independent evaluation now.
+Perform your independent evaluation now against the specific Job Description requirements, qualifications, and role expectations above.
 Remember: every strength and concern MUST include a direct quote or factual reference
 from the candidate's profile above — do NOT invent evidence.
 

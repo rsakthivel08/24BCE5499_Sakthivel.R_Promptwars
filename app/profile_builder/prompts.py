@@ -79,10 +79,9 @@ def build_profile_user_message(
     transcript_text: str,
     target_role: str = "",
 ) -> str:
-    role_hint = f"\nTarget Role: {target_role}" if target_role else ""
+    role_section = f"\n═══════════════════════════════════════\nJOB DESCRIPTION / TARGET ROLE\n═══════════════════════════════════════\n{target_role}\n" if target_role else ""
     return f"""\
-Please extract the structured Candidate Profile from the documents below.{role_hint}
-
+Please extract the structured Candidate Profile from the documents below, noting relevant skills and experience aligned with the target role / job description.{role_section}
 ═══════════════════════════════════════
 RESUME
 ═══════════════════════════════════════

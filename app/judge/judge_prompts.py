@@ -115,9 +115,12 @@ def build_judge_user_message(
     slim_debate = _slim_debate(debate_transcript)
 
     return f"""\
-Please produce the final hiring recommendation.
+Please produce the final hiring recommendation evaluating the candidate against the Job Description requirements.
 
-Target Role: {target_role or "Not specified"}
+════════════════════════════════
+JOB DESCRIPTION / TARGET ROLE REQUIREMENTS
+════════════════════════════════
+{target_role or "Software Engineer"}
 
 ════════════════════════════════
 CANDIDATE PROFILE (SUMMARY)
